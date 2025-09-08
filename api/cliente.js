@@ -1,4 +1,3 @@
-// api/cliente.js (VERSIÓN FINAL Y FLEXIBLE)
 const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
@@ -24,7 +23,6 @@ const buscarEnArchivo = (filePath, clienteId) => {
           let latitud = null;
           let longitud = null;
 
-          // --- LÓGICA INTELIGENTE PARA LEER GPS ---
           // Verificamos si la columna GPS existe y tiene texto
           if (data.GPS && typeof data.GPS === "string" && data.GPS.length > 5) {
             // Limpiamos la cadena de caracteres (quitamos comillas dobles)
@@ -62,7 +60,6 @@ const buscarEnArchivo = (filePath, clienteId) => {
   });
 };
 
-// --- FUNCIÓN PRINCIPAL (SIN CAMBIOS) ---
 module.exports = async (req, res) => {
   const clienteId = req.query.id;
 
