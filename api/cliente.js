@@ -51,8 +51,8 @@ module.exports = async (req, res) => {
 
   // Lista de los archivos de clientes que queremos revisar, en orden.
   const archivos = [
-    path.resolve(__dirname, "GPS Cabanillas.xlsx - CLIENTES.csv"),
-    path.resolve(__dirname, "CLIENTES.xlsx - CLIENTES.csv"),
+    path.resolve(__dirname, "cabanillas.xlsx - CLIENTES.csv"),
+    path.resolve(__dirname, "clientes.xlsx - CLIENTES.csv"),
   ];
 
   try {
