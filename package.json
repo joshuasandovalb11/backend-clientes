@@ -1,0 +1,14 @@
+{
+  "name": "backend-clientes",
+  "version": "1.0.0",
+  "description": "Backend para buscar clientes desplegado en Vercel.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv-parser": "^3.0.0"
+  }
+}
