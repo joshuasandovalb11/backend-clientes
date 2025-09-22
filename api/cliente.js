@@ -69,10 +69,7 @@ module.exports = async (req, res) => {
       .json({ error: 'El parámetro "id" del cliente es requerido.' });
   }
 
-  const archivos = [
-    path.resolve(__dirname, "cabanillas.csv"),
-    path.resolve(__dirname, "clientes.csv"),
-  ];
+  const archivos = [path.resolve(__dirname, "clientes.csv")];
 
   try {
     let cliente = null;
