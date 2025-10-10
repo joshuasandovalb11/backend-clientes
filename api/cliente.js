@@ -7,25 +7,36 @@ const cargarVendedores = (filePath) => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(filePath)) {
       console.warn(`Advertencia: El archivo de vendedores no fue encontrado.`);
-      return resolve(new Map()); // Devuelve un mapa vacío si no hay archivo
+      return resolve(new Map());
     }
 
     const vendedores = new Map();
+
     fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (data) => {
-        const codigo = data.CODIGO || data.Codigo;
-        const telefono = data.TELEFONO || data.Telefono;
-        const nombre = data.NOMBRE || data.Nombre;
-        if (codigo && telefono) {
-          vendedores.set(codigo.trim(), {
-            nombre: nombre ? nombre.trim() : "Vendedor sin nombre",
-            telefono: telefono.trim(),
+        const codigo = data.Codigo ? data.Codigo.trim() : null;
+        const telefono = data.Telefono ? data.Telefono.trim() : null;
+        const nombre = data.Nombre ? data.Nombre.trim() : null;
+
+        if (codigo && telefono && nombre) {
+          vendedores.set(codigo, {
+            nombre: nombre,
+            telefono: telefono,
           });
+          console.log(
+            `✓ Vendedor cargado: ${codigo} - ${nombre} - ${telefono}`
+          );
         }
       })
-      .on("end", () => resolve(vendedores))
-      .on("error", reject);
+      .on("end", () => {
+        console.log(`✓ Total de vendedores cargados: ${vendedores.size}`);
+        resolve(vendedores);
+      })
+      .on("error", (err) => {
+        console.error(`✗ Error al cargar vendedores: ${err.message}`);
+        reject(err);
+      });
   });
 };
 
