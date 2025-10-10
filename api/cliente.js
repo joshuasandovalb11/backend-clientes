@@ -14,74 +14,39 @@ const buscarEnArchivo = (filePath, clienteId) => {
     }
 
     const sucursalesEncontradas = [];
-    const stream = fs
-      .createReadStream(filePath)
+    fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (data) => {
-        // Verificamos si el campo del cliente coincide (puede ser CLAVE o #Cliente)
         const claveCliente = data.CLAVE || data["#Cliente"];
 
         if (claveCliente && claveCliente.trim() === clienteId.trim()) {
           let latitud = null;
           let longitud = null;
 
-          // Verificamos si la columna GPS existe y tiene texto
           if (data.GPS && typeof data.GPS === "string" && data.GPS.length > 5) {
-            // Limpiamos la cadena de caracteres (quitamos comillas dobles)
             const gpsString = data.GPS.replace(/"/g, "").trim();
-
-            // Caso 1: ¿Las coordenadas están separadas por coma?
             if (gpsString.includes(",")) {
               [latitud, longitud] = gpsString.split(",");
-            }
-            // Caso 2: ¿Están separadas por ampersand (&)?
-            else if (gpsString.includes("&")) {
+            } else if (gpsString.includes("&")) {
               [latitud, longitud] = gpsString.split("&");
             }
           }
 
-          // Obtenemos el nombre del cliente (puede ser RAZON o "Nombre del Cliente")
           const nombreCliente =
             data.RAZON || data["Nombre del Cliente"] || "Cliente sin nombre";
-
-          // Obtenemos información de la sucursal
           const numeroSucursal = data["#Suc"] || "0";
           const nombreSucursal = data.Sucursal || "";
+          const telefono = data.Telefono || null;
 
-          // Si tiene GPS válido, agregamos la sucursal
-          if (latitud && longitud) {
-            sucursalesEncontradas.push({
-              id: claveCliente.trim(),
-              nombre: nombreCliente.trim(),
-              latitud: parseFloat(latitud),
-              longitud: parseFloat(longitud),
-              numeroSucursal: numeroSucursal.trim(),
-              nombreSucursal: nombreSucursal.trim(),
-            });
-          }
-          // Si no tiene GPS pero es una sucursal válida (con nombre), la agregamos sin coordenadas
-          else if (nombreSucursal && nombreSucursal.trim() !== "") {
-            sucursalesEncontradas.push({
-              id: claveCliente.trim(),
-              nombre: nombreCliente.trim(),
-              latitud: null,
-              longitud: null,
-              numeroSucursal: numeroSucursal.trim(),
-              nombreSucursal: nombreSucursal.trim(),
-              sinGPS: true,
-            });
-          }
-          // Si no tiene sucursal (numeroSucursal = 0) pero tiene GPS, es ubicación única
-          else if (latitud && longitud) {
-            sucursalesEncontradas.push({
-              id: claveCliente.trim(),
-              nombre: nombreCliente.trim(),
-              latitud: parseFloat(latitud),
-              longitud: parseFloat(longitud),
-              numeroSucursal: "0",
-              nombreSucursal: "",
-            });
-          }
+          sucursalesEncontradas.push({
+            id: claveCliente.trim(),
+            nombre: nombreCliente.trim(),
+            latitud: latitud ? parseFloat(latitud) : null,
+            longitud: longitud ? parseFloat(longitud) : null,
+            telefono: telefono ? telefono.trim() : null,
+            numeroSucursal: numeroSucursal.trim(),
+            nombreSucursal: nombreSucursal.trim(),
+          });
         }
       })
       .on("close", () => {
@@ -107,55 +72,59 @@ module.exports = async (req, res) => {
   if (!clienteId) {
     return res
       .status(400)
-      .json({ error: 'El parámetro "id" del cliente es requerido.' });
+      .json({ message: 'El parámetro "id" del cliente es requerido.' });
   }
 
-  const archivos = [path.resolve(__dirname, "clientes.csv")];
-
   try {
-    let todasLasSucursales = [];
+    const todasLasSucursales = await buscarEnArchivo(
+      path.resolve(__dirname, "clientes.csv"),
+      clienteId
+    );
 
-    // Buscamos en todos los archivos
-    for (const archivo of archivos) {
-      const sucursales = await buscarEnArchivo(archivo, clienteId);
-      todasLasSucursales = todasLasSucursales.concat(sucursales);
-    }
-
-    if (todasLasSucursales.length > 0) {
-      // Filtramos solo las sucursales con GPS válido
-      const sucursalesConGPS = todasLasSucursales.filter((s) => !s.sinGPS);
-
-      if (sucursalesConGPS.length === 0) {
-        return res.status(404).json({
-          message:
-            "Cliente encontrado pero ninguna sucursal tiene coordenadas GPS válidas.",
-        });
-      }
-
-      console.log(
-        `Cliente ${clienteId} encontrado con ${sucursalesConGPS.length} sucursal(es)`
-      );
-
-      // Si solo hay una sucursal con GPS, devolvemos el formato antiguo para retrocompatibilidad
-      if (sucursalesConGPS.length === 1) {
-        return res.status(200).json(sucursalesConGPS[0]);
-      }
-
-      // Si hay múltiples sucursales, devolvemos un array
-      return res.status(200).json({
-        id: clienteId,
-        nombre: sucursalesConGPS[0].nombre,
-        multipleSucursales: true,
-        sucursales: sucursalesConGPS,
-      });
-    } else {
-      console.log(
-        `Cliente con ID ${clienteId} no fue encontrado en ninguna fuente.`
-      );
+    if (todasLasSucursales.length === 0) {
+      // **CASO 1: El cliente realmente no existe**
+      console.log(`Cliente con ID ${clienteId} no fue encontrado.`);
       return res.status(404).json({ message: "Cliente no encontrado" });
     }
+
+    // El cliente existe, ahora analizamos sus sucursales
+    const sucursalesConGPS = todasLasSucursales.filter(
+      (s) => s.latitud && s.longitud
+    );
+    const infoCliente = todasLasSucursales[0]; // Información general del cliente
+
+    if (sucursalesConGPS.length === 0) {
+      // **CASO 2: Cliente existe, pero SIN sucursales con GPS.**
+      // Devolvemos una respuesta exitosa (200) solo con los datos básicos.
+      console.log(
+        `Cliente ${clienteId} encontrado pero sin sucursales con GPS.`
+      );
+      return res.status(200).json({
+        id: infoCliente.id,
+        nombre: infoCliente.nombre,
+        telefono: infoCliente.telefono,
+      });
+    }
+
+    if (sucursalesConGPS.length === 1) {
+      // **CASO 3: Cliente con UNA sucursal con GPS.**
+      console.log(`Cliente ${clienteId} encontrado con 1 sucursal con GPS.`);
+      return res.status(200).json(sucursalesConGPS[0]);
+    }
+
+    // **CASO 4: Cliente con MÚLTIPLES sucursales con GPS.**
+    console.log(
+      `Cliente ${clienteId} encontrado con ${sucursalesConGPS.length} sucursales con GPS.`
+    );
+    return res.status(200).json({
+      id: infoCliente.id,
+      nombre: infoCliente.nombre,
+      telefono: infoCliente.telefono,
+      multipleSucursales: true,
+      sucursales: sucursalesConGPS,
+    });
   } catch (error) {
     console.error("Error en el servidor al procesar la búsqueda:", error);
-    return res.status(500).json({ error: "Error interno del servidor." });
+    return res.status(500).json({ message: "Error interno del servidor." });
   }
 };
