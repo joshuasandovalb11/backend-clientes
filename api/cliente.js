@@ -2,34 +2,43 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 
-// Función para cargar los vendedores y sus teléfonos en un mapa para acceso rápido
+// === FUNCIÓN MODIFICADA PARA LEER TU CSV SIN ENCABEZADOS ===
 const cargarVendedores = (filePath) => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(filePath)) {
       console.warn(`Advertencia: El archivo de vendedores no fue encontrado.`);
-      return resolve(new Map()); // Devuelve un mapa vacío si no hay archivo
+      return resolve(new Map());
     }
 
     const vendedores = new Map();
     fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (data) => {
-        const codigo = data.CODIGO || data.Codigo;
-        const telefono = data.TELEFONO || data.Telefono;
-        const nombre = data.NOMBRE || data.Nombre;
-        if (codigo && telefono) {
+      // Le decimos al parser que no hay encabezados, tratará cada fila como un array
+      .pipe(csv({ headers: false }))
+      .on("data", (row) => {
+        // Los datos vienen en un objeto tipo array: row['0'], row['1'], etc.
+        const codigo = row["2"];
+        const nombre = row["3"];
+        const telefonoRaw = row["4"];
+
+        // Verificamos si la fila parece ser la de un vendedor (tiene código, nombre y teléfono)
+        if (codigo && nombre && telefonoRaw) {
+          // Limpiamos el número de teléfono para quitarle espacios, paréntesis y guiones
+          const telefonoLimpio = telefonoRaw.replace(/\D/g, "");
+
           vendedores.set(codigo.trim(), {
-            nombre: nombre ? nombre.trim() : "Vendedor sin nombre",
-            telefono: telefono.trim(),
+            nombre: nombre.trim(),
+            telefono: telefonoLimpio,
           });
         }
       })
-      .on("end", () => resolve(vendedores))
+      .on("end", () => {
+        console.log("Mapa de vendedores cargado exitosamente.");
+        resolve(vendedores);
+      })
       .on("error", reject);
   });
 };
 
-// Función para buscar al cliente y enriquecerlo con datos del vendedor
 const buscarClienteConVendedor = (clienteId, vendedoresMap) => {
   const filePath = path.resolve(__dirname, "clientes.csv");
   return new Promise((resolve, reject) => {
@@ -107,7 +116,6 @@ module.exports = async (req, res) => {
     );
 
     if (sucursalesConGPS.length === 0) {
-      // Cliente existe, pero sin GPS. Devolver datos del vendedor.
       return res.status(200).json({
         id: infoGeneralCliente.id,
         nombre: infoGeneralCliente.nombre,
@@ -117,11 +125,9 @@ module.exports = async (req, res) => {
     }
 
     if (sucursalesConGPS.length === 1) {
-      // Cliente con una sola ubicación con GPS.
       return res.status(200).json(sucursalesConGPS[0]);
     }
 
-    // Cliente con múltiples sucursales con GPS.
     return res.status(200).json({
       id: infoGeneralCliente.id,
       nombre: infoGeneralCliente.nombre,
