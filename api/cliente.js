@@ -2,72 +2,60 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 
-// Función para cargar los vendedores y sus teléfonos en un mapa para acceso rápido
 const cargarVendedores = (filePath) => {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(filePath)) {
       console.warn(`Advertencia: El archivo de vendedores no fue encontrado.`);
       return resolve(new Map());
     }
-
     const vendedores = new Map();
-
     fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (data) => {
-        const codigo = data.Codigo ? data.Codigo.trim() : null;
-        const telefono = data.Telefono ? data.Telefono.trim() : null;
-        const nombre = data.Nombre ? data.Nombre.trim() : null;
-
-        if (codigo && telefono && nombre) {
-          vendedores.set(codigo, {
-            nombre: nombre,
-            telefono: telefono,
+      .pipe(csv({ headers: false }))
+      .on("data", (row) => {
+        const codigo = row["2"];
+        const nombre = row["3"];
+        const telefonoRaw = row["4"];
+        if (codigo && nombre && telefonoRaw) {
+          const telefonoLimpio = telefonoRaw.replace(/\D/g, "");
+          vendedores.set(codigo.trim(), {
+            nombre: nombre.trim(),
+            telefono: telefonoLimpio,
           });
-          console.log(
-            `✓ Vendedor cargado: ${codigo} - ${nombre} - ${telefono}`
-          );
         }
       })
-      .on("end", () => {
-        console.log(`✓ Total de vendedores cargados: ${vendedores.size}`);
-        resolve(vendedores);
-      })
-      .on("error", (err) => {
-        console.error(`✗ Error al cargar vendedores: ${err.message}`);
-        reject(err);
-      });
+      .on("end", () => resolve(vendedores))
+      .on("error", reject);
   });
 };
 
-// Función para buscar al cliente y enriquecerlo con datos del vendedor
+// Cargamos los vendedores una sola vez y guardamos la promesa.
+const vendedoresMapPromise = cargarVendedores(
+  path.resolve(__dirname, "vendedores.csv")
+);
+
 const buscarClienteConVendedor = (clienteId, vendedoresMap) => {
   const filePath = path.resolve(__dirname, "clientes.csv");
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(filePath)) {
       return resolve([]);
     }
-
     const sucursalesEncontradas = [];
     fs.createReadStream(filePath)
       .pipe(csv())
       .on("data", (data) => {
         const claveCliente = data["#Cliente"];
-
         if (claveCliente && claveCliente.trim() === clienteId.trim()) {
           const codigoVendedor = data.Vend ? data.Vend.trim() : null;
           const vendedorInfo = vendedoresMap.get(codigoVendedor) || {
             nombre: "No asignado",
             telefono: null,
           };
-
           let latitud = null;
           let longitud = null;
           if (data.GPS && data.GPS.length > 5) {
             const gpsString = data.GPS.replace(/"/g, "").trim();
             [latitud, longitud] = gpsString.split(",");
           }
-
           sucursalesEncontradas.push({
             id: claveCliente.trim(),
             nombre: (data["Nombre del Cliente"] || "N/A").trim(),
@@ -85,6 +73,7 @@ const buscarClienteConVendedor = (clienteId, vendedoresMap) => {
   });
 };
 
+// Esta es la función principal que Vercel ejecuta en cada llamada
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -100,9 +89,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const vendedoresMap = await cargarVendedores(
-      path.resolve(__dirname, "vendedores.csv")
-    );
+    // Esperamos a que la promesa de los vendedores se resuelva
+    const vendedoresMap = await vendedoresMapPromise;
     const todasLasSucursales = await buscarClienteConVendedor(
       clienteId,
       vendedoresMap
@@ -118,7 +106,6 @@ module.exports = async (req, res) => {
     );
 
     if (sucursalesConGPS.length === 0) {
-      // Cliente existe, pero sin GPS. Devolver datos del vendedor.
       return res.status(200).json({
         id: infoGeneralCliente.id,
         nombre: infoGeneralCliente.nombre,
@@ -128,11 +115,9 @@ module.exports = async (req, res) => {
     }
 
     if (sucursalesConGPS.length === 1) {
-      // Cliente con una sola ubicación con GPS.
       return res.status(200).json(sucursalesConGPS[0]);
     }
 
-    // Cliente con múltiples sucursales con GPS.
     return res.status(200).json({
       id: infoGeneralCliente.id,
       nombre: infoGeneralCliente.nombre,
