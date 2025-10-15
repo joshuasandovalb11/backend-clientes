@@ -24,13 +24,10 @@ const cargarVendedores = (filePath) => {
             nombre: nombre,
             telefono: telefono,
           });
-          console.log(
-            `✓ Vendedor cargado: ${codigo} - ${nombre} - ${telefono}`
-          );
         }
       })
       .on("end", () => {
-        console.log(`✓ Total de vendedores cargados: ${vendedores.size}`);
+        // console.log(`✓ Total de vendedores cargados: ${vendedores.size}`);
         resolve(vendedores);
       })
       .on("error", (err) => {
@@ -98,6 +95,8 @@ module.exports = async (req, res) => {
   if (!clienteId) {
     return res.status(400).json({ message: 'El parámetro "id" es requerido.' });
   }
+
+  console.log(`Búsqueda iniciada para el cliente ID: ${clienteId}`);
 
   try {
     const vendedoresMap = await cargarVendedores(
