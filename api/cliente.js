@@ -27,7 +27,6 @@ const cargarVendedores = (filePath) => {
         }
       })
       .on("end", () => {
-        // console.log(`✓ Total de vendedores cargados: ${vendedores.size}`);
         resolve(vendedores);
       })
       .on("error", (err) => {
@@ -96,7 +95,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ message: 'El parámetro "id" es requerido.' });
   }
 
-  console.log(`Búsqueda iniciada para el cliente ID: ${clienteId}`);
+  console.log(`Búsqueda iniciada para el cliente ID: #${clienteId}`);
 
   try {
     const vendedoresMap = await cargarVendedores(
