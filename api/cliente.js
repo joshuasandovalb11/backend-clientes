@@ -6,7 +6,7 @@ const corsHandler = cors({
   allowedHeaders: ["Content-Type"],
 });
 
-const SQL_API_URL = process.env.SQL_API_URL || "http://192.168.1.147:3001/api";
+const SQL_API_URL = process.env.SQL_API_URL || "http://localhost:3001/api";
 
 module.exports = async (req, res) => {
   await new Promise((resolve, reject) => {
