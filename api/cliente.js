@@ -14,7 +14,15 @@ const SQL_API_URL = process.env.SQL_API_URL || "http://localhost:3001/api";
  */
 async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
   try {
-    const response = await fetch(url, options);
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+
+    clearTimeout(id);
 
     if (response.status >= 500) {
       throw new Error(`Server Error: ${response.status}`);
@@ -23,7 +31,7 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
   } catch (err) {
     if (retries > 0) {
       console.warn(
-        `[Proxy] Fallo de conexión (${err.message}). Reintentando en ${backoff}ms... (${retries} restantes)`
+        `[Proxy] Intento fallido (${err.name}: ${err.message}). Reintentando en ${backoff}ms...`
       );
       await new Promise((resolve) => setTimeout(resolve, backoff));
       return fetchWithRetry(url, options, retries - 1, backoff * 2);
@@ -65,7 +73,6 @@ module.exports = async (req, res) => {
 
     const infoGeneralCliente = todasLasSucursales[0];
 
-    // Filtro robusto de GPS
     const sucursalesConGPS = todasLasSucursales.filter(
       (s) =>
         s.latitud !== null &&
@@ -76,6 +83,7 @@ module.exports = async (req, res) => {
 
     // CASO 1: Sin GPS -> Devolver contacto del vendedor
     if (sucursalesConGPS.length === 0) {
+      res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=30");
       return res.status(200).json({
         id: infoGeneralCliente.id,
         nombre: infoGeneralCliente.nombre,
@@ -87,10 +95,12 @@ module.exports = async (req, res) => {
 
     // CASO 2: Una sucursal con GPS
     if (sucursalesConGPS.length === 1) {
+      res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=30");
       return res.status(200).json(sucursalesConGPS[0]);
     }
 
     // CASO 3: Múltiples sucursales
+    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=30");
     return res.status(200).json({
       id: infoGeneralCliente.id,
       nombre: infoGeneralCliente.nombre,
@@ -102,7 +112,6 @@ module.exports = async (req, res) => {
   } catch (error) {
     console.error("❌ Error CRÍTICO en el proxy:", error);
 
-    // Mensaje amigable si es error de conexión
     if (
       error.code === "ECONNREFUSED" ||
       error.message.includes("ECONNREFUSED")
