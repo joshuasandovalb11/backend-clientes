@@ -15,7 +15,7 @@ const SQL_API_URL = process.env.SQL_API_URL || "http://localhost:3001/api";
 async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
   try {
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 5000);
+    const id = setTimeout(() => controller.abort(), 20000);
 
     const response = await fetch(url, {
       ...options,
