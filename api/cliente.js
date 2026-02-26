@@ -31,7 +31,7 @@ async function fetchWithRetry(url, options = {}, retries = 3, backoff = 300) {
   } catch (err) {
     if (retries > 0) {
       console.warn(
-        `[Proxy] Intento fallido (${err.name}: ${err.message}). Reintentando en ${backoff}ms...`
+        `[Proxy] Intento fallido (${err.name}: ${err.message}). Reintentando en ${backoff}ms...`,
       );
       await new Promise((resolve) => setTimeout(resolve, backoff));
       return fetchWithRetry(url, options, retries - 1, backoff * 2);
@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
 
   try {
     const response = await fetchWithRetry(
-      `${SQL_API_URL}/clientes/app-search?id=${clienteId}`
+      `${SQL_API_URL}/clientes/app-search?id=${clienteId}`,
     );
 
     if (!response.ok) {
@@ -78,7 +78,7 @@ module.exports = async (req, res) => {
         s.latitud !== null &&
         s.longitud !== null &&
         s.latitud !== 0 &&
-        s.longitud !== 0
+        s.longitud !== 0,
     );
 
     // CASO 1: Sin GPS -> Devolver contacto del vendedor
