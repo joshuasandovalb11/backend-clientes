@@ -2,7 +2,7 @@ const cors = require("cors");
 
 const corsHandler = cors({
   origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type"],
 });
 
@@ -17,31 +17,29 @@ module.exports = async (req, res) => {
   });
 
   // ========================================================
-  // Manejar petición GET (Consultar historial al abrir app)
+  // Manejar GET (Consultar visitas normales o el historial)
   // ========================================================
   if (req.method === "GET") {
     const deviceId = req.query.deviceId;
+    const historial = req.query.historial;
 
-    if (!deviceId) {
+    if (!deviceId)
       return res
         .status(400)
         .json({ message: "El parámetro deviceId es requerido." });
-    }
-
-    console.log(
-      `[Proxy Vercel] Consultando visitas para DeviceID: ${deviceId}`,
-    );
 
     try {
-      const response = await fetch(
-        `${SQL_API_URL}/visitas/${encodeURIComponent(deviceId)}`,
-      );
+      let url = `${SQL_API_URL}/visitas/${encodeURIComponent(deviceId)}`;
 
+      if (historial === "true") {
+        url = `${SQL_API_URL}/visitas/historial/${encodeURIComponent(deviceId)}`;
+      }
+
+      const response = await fetch(url);
       if (!response.ok)
         throw new Error(`Error del servidor SQL: ${response.status}`);
 
       const data = await response.json();
-
       res.setHeader("Cache-Control", "no-store");
       return res.status(200).json(data);
     } catch (error) {
@@ -51,11 +49,9 @@ module.exports = async (req, res) => {
   }
 
   // ========================================================
-  // Manejar petición POST (Botón Marcar/Desmarcar)
+  // Manejar POST (Botón Marcar/Desmarcar en la tarjeta)
   // ========================================================
   if (req.method === "POST") {
-    console.log(`[Proxy Vercel] Petición para registrar/eliminar visita.`);
-
     try {
       const response = await fetch(`${SQL_API_URL}/visitas/toggle`, {
         method: "POST",
@@ -65,11 +61,38 @@ module.exports = async (req, res) => {
 
       if (!response.ok)
         throw new Error(`Error del servidor SQL: ${response.status}`);
-
       const data = await response.json();
       return res.status(200).json(data);
     } catch (error) {
       console.error("❌ Error proxy POST visitas:", error);
+      return res.status(500).json({ message: "Error interno de conexión." });
+    }
+  }
+
+  // ========================================================
+  // Manejar DELETE (Resetear todas las visitas de un dispositivo)
+  // ========================================================
+  if (req.method === "DELETE") {
+    const deviceId = req.query.deviceId;
+    if (!deviceId)
+      return res
+        .status(400)
+        .json({ message: "El parámetro deviceId es requerido." });
+
+    try {
+      const response = await fetch(
+        `${SQL_API_URL}/visitas/reset/${encodeURIComponent(deviceId)}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok)
+        throw new Error(`Error del servidor SQL: ${response.status}`);
+      const data = await response.json();
+      return res.status(200).json(data);
+    } catch (error) {
+      console.error("❌ Error proxy DELETE visitas:", error);
       return res.status(500).json({ message: "Error interno de conexión." });
     }
   }
