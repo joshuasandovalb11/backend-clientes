@@ -15,7 +15,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  const SQL_API_URL = process.env.SQL_API_URL;
+  const BASE_URL = "http://toolsdemexico.net:3001/api";
+  const SQL_API_URL = BASE_URL;
   const path = req.url.split("/api/auth")[1] || "";
   const targetUrl = `${SQL_API_URL}/supervisor/auth${path}`;
 

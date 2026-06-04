@@ -6,7 +6,8 @@ const corsHandler = cors({
   allowedHeaders: ["Content-Type"],
 });
 
-const SQL_API_URL = process.env.SQL_API_URL || "http://localhost:3001/api";
+const BASE_URL = "http://toolsdemexico.net:3001/api";
+const SQL_API_URL = BASE_URL;
 
 /**
  * Función auxiliar para reintentar peticiones en caso de fallos de red.
@@ -57,9 +58,9 @@ module.exports = async (req, res) => {
   console.log(`[Proxy Vercel] Búsqueda ID: #${clienteId} -> SQL Server`);
 
   try {
-    const response = await fetchWithRetry(
-      `${SQL_API_URL}/general/clientes/app-search?id=${clienteId}`,
-    );
+    const finalFetchUrl = `${BASE_URL}/general/clientes/app-search?id=${clienteId}`;
+    console.log(`[DEBUG] Disparando FETCH exactamente a: -> ${finalFetchUrl} <-`);
+    const response = await fetchWithRetry(finalFetchUrl);
 
     if (!response.ok) {
       throw new Error(`Error del servidor SQL: ${response.status}`);
