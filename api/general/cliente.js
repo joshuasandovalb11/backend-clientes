@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
 
   try {
     const response = await fetchWithRetry(
-      `${SQL_API_URL}/clientes/app-search?id=${clienteId}`,
+      `${SQL_API_URL}/general/clientes/app-search?id=${clienteId}`,
     );
 
     if (!response.ok) {

@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
 
   try {
     const response = await fetch(
-      `${SQL_API_URL}/clientes/vendedor/${encodeURIComponent(vend)}`,
+      `${SQL_API_URL}/supervisor/clientes/vendedor/${encodeURIComponent(vend)}`,
     );
 
     if (!response.ok) {

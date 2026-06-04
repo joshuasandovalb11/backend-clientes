@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
   console.log(`[Proxy Vercel] Petición para obtener lista de vendedores`);
 
   try {
-    const response = await fetch(`${SQL_API_URL}/vendedores`);
+    const response = await fetch(`${SQL_API_URL}/supervisor/vendedores`);
 
     if (!response.ok) {
       throw new Error(`Error del servidor SQL: ${response.status}`);

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   const SQL_API_URL = process.env.SQL_API_URL;
   const path = req.url.split("/api/auth")[1] || "";
-  const targetUrl = `${SQL_API_URL}/auth${path}`;
+  const targetUrl = `${SQL_API_URL}/supervisor/auth${path}`;
 
   try {
     const options = {

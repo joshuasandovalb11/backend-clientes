@@ -29,10 +29,10 @@ module.exports = async (req, res) => {
         .json({ message: "El parámetro deviceId es requerido." });
 
     try {
-      let url = `${SQL_API_URL}/visitas/${encodeURIComponent(deviceId)}`;
+      let url = `${SQL_API_URL}/supervisor/visitas/${encodeURIComponent(deviceId)}`;
 
       if (historial === "true") {
-        url = `${SQL_API_URL}/visitas/historial/${encodeURIComponent(deviceId)}`;
+        url = `${SQL_API_URL}/supervisor/visitas/historial/${encodeURIComponent(deviceId)}`;
       }
 
       const response = await fetch(url);
@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
   // ========================================================
   if (req.method === "POST") {
     try {
-      const response = await fetch(`${SQL_API_URL}/visitas/toggle`, {
+      const response = await fetch(`${SQL_API_URL}/supervisor/visitas/toggle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(req.body),
@@ -81,7 +81,7 @@ module.exports = async (req, res) => {
 
     try {
       const response = await fetch(
-        `${SQL_API_URL}/visitas/reset/${encodeURIComponent(deviceId)}`,
+        `${SQL_API_URL}/supervisor/visitas/reset/${encodeURIComponent(deviceId)}`,
         {
           method: "DELETE",
         },

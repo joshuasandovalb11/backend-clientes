@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
 
   try {
     const response = await fetch(
-      `${SQL_API_URL}/credenciales/${encodeURIComponent(tipo)}`,
+      `${SQL_API_URL}/supervisor/credenciales/${encodeURIComponent(tipo)}`,
     );
 
     if (!response.ok) {
