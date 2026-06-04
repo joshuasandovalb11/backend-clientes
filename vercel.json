@@ -5,7 +5,13 @@
     }
   },
   "rewrites": [
-    { "source": "/api/auth/(.*)", "destination": "/api/auth" },
-    { "source": "/api/cliente/(.*)", "destination": "/api/cliente" }
+    { "source": "/api/cliente", "destination": "/api/general/cliente" },
+    { "source": "/api/auth", "destination": "/api/supervisor/auth" },
+    { "source": "/api/clientes-vendedor", "destination": "/api/supervisor/clientes-vendedor" },
+    { "source": "/api/credenciales", "destination": "/api/supervisor/credenciales" },
+    { "source": "/api/vendedores", "destination": "/api/supervisor/vendedores" },
+    { "source": "/api/visitas", "destination": "/api/supervisor/visitas" },
+    { "source": "/api/auth/(.*)", "destination": "/api/supervisor/auth" },
+    { "source": "/api/cliente/(.*)", "destination": "/api/general/cliente" }
   ]
 }
