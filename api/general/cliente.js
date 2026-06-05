@@ -59,7 +59,6 @@ module.exports = async (req, res) => {
 
   try {
     const finalFetchUrl = `${BASE_URL}/general/clientes/app-search?id=${clienteId}`;
-    console.log(`[DEBUG] Disparando FETCH exactamente a: -> ${finalFetchUrl} <-`);
     const response = await fetchWithRetry(finalFetchUrl);
 
     if (!response.ok) {
