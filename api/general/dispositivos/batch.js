@@ -4,8 +4,6 @@ module.exports = async (req, res) => {
   try {
     const targetUrl = `${BASE_URL}/visualizador/rutas/moviles/batch`;
 
-    console.log(`[Proxy Batch] Redirigiendo petición a: ${targetUrl}`);
-
     const options = {
       method: req.method,
       headers: {

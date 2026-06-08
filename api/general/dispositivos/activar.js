@@ -4,8 +4,6 @@ module.exports = async (req, res) => {
   try {
     const targetUrl = `${BASE_URL}/general/dispositivos/activar`;
 
-    console.log(`[Proxy Activar] Redirigiendo petición a: ${targetUrl}`);
-
     const options = {
       method: req.method,
       headers: {
