@@ -1,8 +1,10 @@
-const URL_BACKEND = process.env.URL_BACKEND || "http://localhost:3001";
+const BASE_URL = process.env.SQL_API_URL || "http://toolsdemexico.net:3001/api";
 
 module.exports = async (req, res) => {
   try {
-    const targetUrl = `${URL_BACKEND}/api/visualizador/rutas/moviles/batch`;
+    const targetUrl = `${BASE_URL}/visualizador/rutas/moviles/batch`;
+
+    console.log(`[Proxy Batch] Redirigiendo petición a: ${targetUrl}`);
 
     const options = {
       method: req.method,
@@ -20,7 +22,7 @@ module.exports = async (req, res) => {
     const contentType = response.headers.get("content-type");
 
     res.status(response.status);
-    
+
     if (contentType && contentType.includes("application/json")) {
       const data = await response.json();
       return res.json(data);
